@@ -1,6 +1,7 @@
 # main.py
 
 import platform
+import time
 
 import cv2
 
@@ -11,6 +12,9 @@ from config import (
     WEBCAM_HEIGHT,
     FACE_LANDMARKER_MODEL_PATH,
     WEBCAM_WINDOW_NAME,
+    WINDOW_X,
+    WINDOW_Y,
+    WINDOW_TOPMOST,
     STOP_LATCHED,
     EYE_CLOSED_STOP_SECONDS,
     LOOK_LEFT_STOP_SECONDS,
@@ -32,6 +36,7 @@ from config import (
     BLUETOOTH_STOP_COMMAND,
     BLUETOOTH_GO_COMMAND,
     DISPLAY_ENABLED,
+    STARTUP_CAMERA_PREVIEW_SECONDS,
     FACE_ANALYSIS_ENABLED,
 )
 from safety_logic import SafetyLogic
@@ -141,6 +146,9 @@ def open_display_window():
         cv2.startWindowThread()
         cv2.namedWindow(WEBCAM_WINDOW_NAME, cv2.WINDOW_NORMAL)
         cv2.resizeWindow(WEBCAM_WINDOW_NAME, WEBCAM_WIDTH, WEBCAM_HEIGHT)
+        cv2.moveWindow(WEBCAM_WINDOW_NAME, WINDOW_X, WINDOW_Y)
+        if WINDOW_TOPMOST:
+            cv2.setWindowProperty(WEBCAM_WINDOW_NAME, cv2.WND_PROP_TOPMOST, 1)
         cv2.waitKey(1)
         print(f"Display window opened: {WEBCAM_WINDOW_NAME}")
     except cv2.error as exc:
@@ -161,11 +169,35 @@ def show_startup_frame(driver_source, message):
         cv2.waitKey(1)
 
 
+def run_startup_camera_preview(driver_source):
+    if not DISPLAY_ENABLED or STARTUP_CAMERA_PREVIEW_SECONDS <= 0:
+        return
+
+    print(f"Showing camera preview for {STARTUP_CAMERA_PREVIEW_SECONDS:.1f} seconds...")
+    end_at = time.time() + STARTUP_CAMERA_PREVIEW_SECONDS
+
+    while time.time() < end_at:
+        ret, frame = driver_source.read()
+        if not ret:
+            raise RuntimeError("Could not read webcam frame during startup preview.")
+
+        frame = cv2.flip(frame, 1)
+        preview = draw_message(frame, "Camera preview - press q to quit")
+        cv2.imshow(WEBCAM_WINDOW_NAME, preview)
+
+        if cv2.waitKey(20) & 0xFF == ord("q"):
+            raise KeyboardInterrupt
+
+    if WINDOW_TOPMOST:
+        cv2.setWindowProperty(WEBCAM_WINDOW_NAME, cv2.WND_PROP_TOPMOST, 0)
+
+
 def main():
     driver_source = open_driver_source()
     open_display_window()
 
     show_startup_frame(driver_source, "Camera ready")
+    run_startup_camera_preview(driver_source)
 
     logic = SafetyLogic(
         eye_closed_stop_seconds=EYE_CLOSED_STOP_SECONDS,

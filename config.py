@@ -17,6 +17,9 @@ FACE_LANDMARKER_MODEL_PATH = "assets/models/face_landmarker.task"
 # Window names
 # =========================
 WEBCAM_WINDOW_NAME = "Driver Camera"
+WINDOW_X = 80
+WINDOW_Y = 80
+WINDOW_TOPMOST = True
 
 # =========================
 # Safety timing thresholds
@@ -69,5 +72,6 @@ BLUETOOTH_GO_COMMAND = "G"
 # UI / behavior
 # =========================
 DISPLAY_ENABLED = True
+STARTUP_CAMERA_PREVIEW_SECONDS = 3.0
 FACE_ANALYSIS_ENABLED = True
 STOP_LATCHED = True

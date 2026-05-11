@@ -29,6 +29,14 @@ pip install -r requirements.txt
 
 ## Run
 
+First test only the webcam window:
+
+```bash
+python camera_test.py
+```
+
+If that window appears, run the full car system:
+
 ```bash
 python main.py
 ```
@@ -71,6 +79,7 @@ Camera and debug switches are also in `config.py`.
 CAMERA_INDEX = 0
 CAMERA_BACKEND = "DSHOW"
 DISPLAY_ENABLED = True
+STARTUP_CAMERA_PREVIEW_SECONDS = 3.0
 FACE_ANALYSIS_ENABLED = True
 ```
 
@@ -106,6 +115,8 @@ If Bluetooth connects but the camera window does not appear, check these first:
 - Run the project with local Windows Python if you are using `COM7`. WSL/Linux usually cannot show Windows COM ports and OpenCV windows the same way.
 - Make sure no other app is using the webcam.
 - If your camera is not index `0`, change `CAMERA_INDEX` in `config.py` to `1` or `2`.
+- If the webcam light turns on but no window appears, run `python camera_test.py` and use `Alt+Tab` to find the `Driver Camera` window.
+- If the window is off-screen, change `WINDOW_X` and `WINDOW_Y` in `config.py`.
 - If the camera opens but freezes while loading, set `FACE_ANALYSIS_ENABLED = False` to test camera-only mode.
 - If Bluetooth causes startup problems, set `BLUETOOTH_ENABLED = False` to test camera and face detection only.
 - If VS Code asks for camera permission, allow it.
