@@ -1,25 +1,12 @@
 # config.py
 
 # =========================
-# Driver input source
-# =========================
-USE_VIDEO_FILE_FOR_DRIVER = False
-DRIVER_VIDEO_PATH = "assets/driver_test.mp4"
-
-# =========================
-# Camera
+# Driver camera
 # =========================
 CAMERA_INDEX = 0
+CAMERA_BACKEND = "DSHOW"
 WEBCAM_WIDTH = 640
 WEBCAM_HEIGHT = 480
-
-# =========================
-# Simulation video + sound
-# =========================
-ROAD_SIMULATOR_ENABLED = False
-ROAD_VIDEO_PATH = "assets/road_video.mp4"
-WARNING_SOUND_PATH = "assets/warning.wav"
-WARNING_SOUND_DURATION_SECONDS = 1.0
 
 # =========================
 # MediaPipe model
@@ -30,7 +17,6 @@ FACE_LANDMARKER_MODEL_PATH = "assets/models/face_landmarker.task"
 # Window names
 # =========================
 WEBCAM_WINDOW_NAME = "Driver Camera"
-ROAD_WINDOW_NAME = "Road Simulation"
 
 # =========================
 # Safety timing thresholds
@@ -82,5 +68,6 @@ BLUETOOTH_GO_COMMAND = "G"
 # =========================
 # UI / behavior
 # =========================
-SHOW_DEBUG_TEXT = True
+DISPLAY_ENABLED = True
+FACE_ANALYSIS_ENABLED = True
 STOP_LATCHED = True

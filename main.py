@@ -1,21 +1,16 @@
 # main.py
 
+import platform
+
 import cv2
 
 from config import (
-    USE_VIDEO_FILE_FOR_DRIVER,
-    DRIVER_VIDEO_PATH,
     CAMERA_INDEX,
+    CAMERA_BACKEND,
     WEBCAM_WIDTH,
     WEBCAM_HEIGHT,
-    ROAD_SIMULATOR_ENABLED,
-    ROAD_VIDEO_PATH,
-    WARNING_SOUND_PATH,
-    WARNING_SOUND_DURATION_SECONDS,
     FACE_LANDMARKER_MODEL_PATH,
     WEBCAM_WINDOW_NAME,
-    ROAD_WINDOW_NAME,
-    SHOW_DEBUG_TEXT,
     STOP_LATCHED,
     EYE_CLOSED_STOP_SECONDS,
     LOOK_LEFT_STOP_SECONDS,
@@ -36,22 +31,21 @@ from config import (
     BLUETOOTH_BAUDRATE,
     BLUETOOTH_STOP_COMMAND,
     BLUETOOTH_GO_COMMAND,
+    DISPLAY_ENABLED,
+    FACE_ANALYSIS_ENABLED,
 )
-from simulator import RoadSimulator
 from safety_logic import SafetyLogic
 from face_analysis import FaceAnalyzer
 from bluetooth_control import BluetoothController
 
 
-def draw_status(frame, state, reason=None, warning_active=False):
+def draw_status(frame, state, reason=None):
     output = frame.copy()
 
     if state == "STOP":
         cv2.putText(output, "STOP", (30, 60), cv2.FONT_HERSHEY_SIMPLEX, 2.0, (0, 0, 255), 4)
         if reason:
             cv2.putText(output, f"Reason: {reason}", (30, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-    elif warning_active:
-        cv2.putText(output, "WARNING", (30, 60), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 255), 3)
     else:
         cv2.putText(output, "NORMAL", (30, 60), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3)
 
@@ -101,31 +95,77 @@ def draw_analysis_overlay(frame, analysis, timers):
     return output
 
 
-def open_driver_source():
-    if USE_VIDEO_FILE_FOR_DRIVER:
-        cap = cv2.VideoCapture(DRIVER_VIDEO_PATH)
-        if not cap.isOpened():
-            raise RuntimeError(f"Could not open driver video: {DRIVER_VIDEO_PATH}")
-        return cap
+def draw_message(frame, message):
+    output = frame.copy()
+    cv2.putText(output, message, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+    return output
 
-    cap = cv2.VideoCapture(CAMERA_INDEX)
+
+def open_driver_source():
+    backend = get_camera_backend()
+
+    print(f"Opening camera index {CAMERA_INDEX}...")
+    cap = cv2.VideoCapture(CAMERA_INDEX, backend)
+
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, WEBCAM_WIDTH)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, WEBCAM_HEIGHT)
+
     if not cap.isOpened():
-        raise RuntimeError("Could not open webcam.")
+        raise RuntimeError(f"Could not open webcam at CAMERA_INDEX={CAMERA_INDEX}.")
+
+    ret, _ = cap.read()
+    if not ret:
+        cap.release()
+        raise RuntimeError("Webcam opened, but no frames were received.")
+
+    print(f"Camera opened at index {CAMERA_INDEX}.")
     return cap
+
+
+def get_camera_backend():
+    if platform.system() != "Windows":
+        return cv2.CAP_ANY
+
+    if CAMERA_BACKEND.upper() == "DSHOW":
+        return cv2.CAP_DSHOW
+    if CAMERA_BACKEND.upper() == "MSMF":
+        return cv2.CAP_MSMF
+    return cv2.CAP_ANY
+
+
+def open_display_window():
+    if not DISPLAY_ENABLED:
+        return
+
+    try:
+        cv2.startWindowThread()
+        cv2.namedWindow(WEBCAM_WINDOW_NAME, cv2.WINDOW_NORMAL)
+        cv2.resizeWindow(WEBCAM_WINDOW_NAME, WEBCAM_WIDTH, WEBCAM_HEIGHT)
+        cv2.waitKey(1)
+        print(f"Display window opened: {WEBCAM_WINDOW_NAME}")
+    except cv2.error as exc:
+        raise RuntimeError(
+            "Could not open the OpenCV display window. Run this with a desktop session, "
+            "not a headless terminal or WSL without GUI support."
+        ) from exc
+
+
+def show_startup_frame(driver_source, message):
+    ret, frame = driver_source.read()
+    if not ret:
+        raise RuntimeError("Could not read webcam frame during startup.")
+
+    frame = cv2.flip(frame, 1)
+    if DISPLAY_ENABLED:
+        cv2.imshow(WEBCAM_WINDOW_NAME, draw_message(frame, message))
+        cv2.waitKey(1)
 
 
 def main():
     driver_source = open_driver_source()
+    open_display_window()
 
-    simulator = None
-    if ROAD_SIMULATOR_ENABLED:
-        simulator = RoadSimulator(
-            video_path=ROAD_VIDEO_PATH,
-            warning_sound_path=WARNING_SOUND_PATH,
-            warning_duration=WARNING_SOUND_DURATION_SECONDS,
-        )
+    show_startup_frame(driver_source, "Camera ready")
 
     logic = SafetyLogic(
         eye_closed_stop_seconds=EYE_CLOSED_STOP_SECONDS,
@@ -137,18 +177,25 @@ def main():
         stop_latched=STOP_LATCHED,
     )
 
-    analyzer = FaceAnalyzer(
-        model_path=FACE_LANDMARKER_MODEL_PATH,
-        ear_closed_threshold=EAR_CLOSED_THRESHOLD,
-        yaw_left_threshold=YAW_LEFT_THRESHOLD,
-        yaw_right_threshold=YAW_RIGHT_THRESHOLD,
-        pitch_up_threshold=PITCH_UP_THRESHOLD,
-        pitch_down_threshold=PITCH_DOWN_THRESHOLD,
-        forward_yaw_deadzone=FORWARD_YAW_DEADZONE,
-        forward_pitch_deadzone=FORWARD_PITCH_DEADZONE,
-        smoothing_alpha=SMOOTHING_ALPHA,
-    )
+    analyzer = None
+    if FACE_ANALYSIS_ENABLED:
+        print("Loading face model...")
+        show_startup_frame(driver_source, "Loading face model...")
+        analyzer = FaceAnalyzer(
+            model_path=FACE_LANDMARKER_MODEL_PATH,
+            ear_closed_threshold=EAR_CLOSED_THRESHOLD,
+            yaw_left_threshold=YAW_LEFT_THRESHOLD,
+            yaw_right_threshold=YAW_RIGHT_THRESHOLD,
+            pitch_up_threshold=PITCH_UP_THRESHOLD,
+            pitch_down_threshold=PITCH_DOWN_THRESHOLD,
+            forward_yaw_deadzone=FORWARD_YAW_DEADZONE,
+            forward_pitch_deadzone=FORWARD_PITCH_DEADZONE,
+            smoothing_alpha=SMOOTHING_ALPHA,
+        )
+        print("Face model ready.")
 
+    print("Connecting Bluetooth...")
+    show_startup_frame(driver_source, "Connecting Bluetooth...")
     bluetooth = BluetoothController(
         enabled=BLUETOOTH_ENABLED,
         port=BLUETOOTH_PORT,
@@ -165,81 +212,64 @@ def main():
     while True:
         ret, driver_frame = driver_source.read()
         if not ret:
-            if USE_VIDEO_FILE_FOR_DRIVER:
-                print("Driver video ended.")
-            else:
-                print("Could not read driver frame.")
+            print("Could not read driver frame from webcam.")
             break
 
-        if not USE_VIDEO_FILE_FOR_DRIVER:
-            driver_frame = cv2.flip(driver_frame, 1)
+        driver_frame = cv2.flip(driver_frame, 1)
 
-        analysis = analyzer.analyze(driver_frame)
-        logic.update(analysis)
+        if DISPLAY_ENABLED:
+            cv2.imshow(WEBCAM_WINDOW_NAME, draw_message(driver_frame, "Analyzing..."))
+            cv2.waitKey(1)
+
+        if analyzer is not None:
+            analysis = analyzer.analyze(driver_frame)
+            logic.update(analysis)
+        else:
+            analysis = {
+                "face_detected": False,
+                "eyes_closed": False,
+                "head_direction": "DISABLED",
+                "avg_ear": 0.0,
+                "yaw": 0.0,
+                "pitch": 0.0,
+            }
 
         if logic.is_stopped():
-            if simulator is not None:
-                simulator.stop()
             bluetooth.send_stop()
         else:
             bluetooth.send_go()
 
-        warning_active = simulator is not None and simulator.is_warning_active()
         timers = logic.get_timers()
 
         webcam_display = draw_status(
             driver_frame,
             logic.state,
             logic.stop_reason,
-            warning_active=warning_active,
         )
         webcam_display = draw_analysis_overlay(webcam_display, analysis, timers)
 
-        cv2.imshow(WEBCAM_WINDOW_NAME, webcam_display)
+        if DISPLAY_ENABLED:
+            cv2.imshow(WEBCAM_WINDOW_NAME, webcam_display)
 
-        if simulator is not None:
-            road_frame = simulator.read_frame()
-            road_display = draw_status(
-                road_frame,
-                logic.state,
-                logic.stop_reason,
-                warning_active=warning_active,
-            )
-
-            if SHOW_DEBUG_TEXT:
-                cv2.putText(
-                    road_display,
-                    f"Driver source: {'video file' if USE_VIDEO_FILE_FOR_DRIVER else 'webcam'}",
-                    (20, road_display.shape[0] - 20),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.7,
-                    (255, 255, 255),
-                    2,
-                )
-
-            cv2.imshow(ROAD_WINDOW_NAME, road_display)
-
-        key = cv2.waitKey(20) & 0xFF
+        key = cv2.waitKey(20) & 0xFF if DISPLAY_ENABLED else 255
 
         if key == ord("c"):
-            if analysis["face_detected"]:
+            if analyzer is not None and analysis["face_detected"]:
                 analyzer.calibrate_forward_from_raw()
                 print("Forward direction calibrated from raw pose.")
 
         elif key == ord("r"):
             logic.reset()
-            if simulator is not None:
-                simulator.reset()
 
         elif key == ord("q"):
             break
 
     driver_source.release()
-    if simulator is not None:
-        simulator.release()
-    analyzer.close()
+    if analyzer is not None:
+        analyzer.close()
     bluetooth.close()
-    cv2.destroyAllWindows()
+    if DISPLAY_ENABLED:
+        cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
