@@ -8,6 +8,7 @@ from config import (
     CAMERA_INDEX,
     WEBCAM_WIDTH,
     WEBCAM_HEIGHT,
+    ROAD_SIMULATOR_ENABLED,
     ROAD_VIDEO_PATH,
     WARNING_SOUND_PATH,
     WARNING_SOUND_DURATION_SECONDS,
@@ -118,11 +119,13 @@ def open_driver_source():
 def main():
     driver_source = open_driver_source()
 
-    simulator = RoadSimulator(
-        video_path=ROAD_VIDEO_PATH,
-        warning_sound_path=WARNING_SOUND_PATH,
-        warning_duration=WARNING_SOUND_DURATION_SECONDS,
-    )
+    simulator = None
+    if ROAD_SIMULATOR_ENABLED:
+        simulator = RoadSimulator(
+            video_path=ROAD_VIDEO_PATH,
+            warning_sound_path=WARNING_SOUND_PATH,
+            warning_duration=WARNING_SOUND_DURATION_SECONDS,
+        )
 
     logic = SafetyLogic(
         eye_closed_stop_seconds=EYE_CLOSED_STOP_SECONDS,
@@ -174,15 +177,14 @@ def main():
         analysis = analyzer.analyze(driver_frame)
         logic.update(analysis)
 
-        road_frame = simulator.read_frame()
-
         if logic.is_stopped():
-            simulator.stop()
+            if simulator is not None:
+                simulator.stop()
             bluetooth.send_stop()
         else:
             bluetooth.send_go()
 
-        warning_active = simulator.is_warning_active()
+        warning_active = simulator is not None and simulator.is_warning_active()
         timers = logic.get_timers()
 
         webcam_display = draw_status(
@@ -193,26 +195,29 @@ def main():
         )
         webcam_display = draw_analysis_overlay(webcam_display, analysis, timers)
 
-        road_display = draw_status(
-            road_frame,
-            logic.state,
-            logic.stop_reason,
-            warning_active=warning_active,
-        )
+        cv2.imshow(WEBCAM_WINDOW_NAME, webcam_display)
 
-        if SHOW_DEBUG_TEXT:
-            cv2.putText(
-                road_display,
-                f"Driver source: {'video file' if USE_VIDEO_FILE_FOR_DRIVER else 'webcam'}",
-                (20, road_display.shape[0] - 20),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                (255, 255, 255),
-                2,
+        if simulator is not None:
+            road_frame = simulator.read_frame()
+            road_display = draw_status(
+                road_frame,
+                logic.state,
+                logic.stop_reason,
+                warning_active=warning_active,
             )
 
-        cv2.imshow(WEBCAM_WINDOW_NAME, webcam_display)
-        cv2.imshow(ROAD_WINDOW_NAME, road_display)
+            if SHOW_DEBUG_TEXT:
+                cv2.putText(
+                    road_display,
+                    f"Driver source: {'video file' if USE_VIDEO_FILE_FOR_DRIVER else 'webcam'}",
+                    (20, road_display.shape[0] - 20),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7,
+                    (255, 255, 255),
+                    2,
+                )
+
+            cv2.imshow(ROAD_WINDOW_NAME, road_display)
 
         key = cv2.waitKey(20) & 0xFF
 
@@ -223,13 +228,15 @@ def main():
 
         elif key == ord("r"):
             logic.reset()
-            simulator.reset()
+            if simulator is not None:
+                simulator.reset()
 
         elif key == ord("q"):
             break
 
     driver_source.release()
-    simulator.release()
+    if simulator is not None:
+        simulator.release()
     analyzer.close()
     bluetooth.close()
     cv2.destroyAllWindows()

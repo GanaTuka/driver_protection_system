@@ -16,6 +16,7 @@ WEBCAM_HEIGHT = 480
 # =========================
 # Simulation video + sound
 # =========================
+ROAD_SIMULATOR_ENABLED = False
 ROAD_VIDEO_PATH = "assets/road_video.mp4"
 WARNING_SOUND_PATH = "assets/warning.wav"
 WARNING_SOUND_DURATION_SECONDS = 1.0
@@ -72,8 +73,8 @@ SMOOTHING_ALPHA = 0.12
 # =========================
 # Bluetooth / HC-05
 # =========================
-BLUETOOTH_ENABLED = False
-BLUETOOTH_PORT = "/dev/rfcomm0"
+BLUETOOTH_ENABLED = True
+BLUETOOTH_PORT = "COM7"
 BLUETOOTH_BAUDRATE = 9600
 BLUETOOTH_STOP_COMMAND = "S"
 BLUETOOTH_GO_COMMAND = "G"

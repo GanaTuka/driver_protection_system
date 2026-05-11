@@ -1,11 +1,11 @@
 # Driver Protection System
 
-A Python driver monitoring prototype that uses MediaPipe face landmarks to detect unsafe driver behavior and stop a road simulation. It can also send stop/go commands to an Arduino car through an HC-05 Bluetooth module.
+A Python driver monitoring prototype that uses MediaPipe face landmarks to detect unsafe driver behavior and send stop/go commands to an Arduino car through an HC-05 Bluetooth module.
 
 ## Features
 
 - Detects face presence, eye closure, and head direction.
-- Stops the road simulation when unsafe behavior lasts too long.
+- Stops the Arduino car when unsafe behavior lasts too long.
 - Supports webcam input or a driver test video.
 - Sends Bluetooth commands to Arduino using HC-05.
 
@@ -35,9 +35,11 @@ Bluetooth is configured in `config.py`.
 
 ```python
 BLUETOOTH_ENABLED = True
-BLUETOOTH_PORT = "/dev/rfcomm0"
+BLUETOOTH_PORT = "COM7"
 BLUETOOTH_BAUDRATE = 9600
 ```
+
+`COM7` is the default Windows Bluetooth serial port. If your HC-05 appears on another port, change `BLUETOOTH_PORT` in `config.py`.
 
 The Python app sends:
 
