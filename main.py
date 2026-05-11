@@ -249,10 +249,6 @@ def main():
 
         driver_frame = cv2.flip(driver_frame, 1)
 
-        if DISPLAY_ENABLED:
-            cv2.imshow(WEBCAM_WINDOW_NAME, draw_message(driver_frame, "Analyzing..."))
-            cv2.waitKey(1)
-
         if analyzer is not None:
             analysis = analyzer.analyze(driver_frame)
             logic.update(analysis)
