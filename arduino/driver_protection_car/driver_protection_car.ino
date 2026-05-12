@@ -71,20 +71,33 @@ void loop() {
 // =================================================
 
 void readBluetoothCommand() {
-  while (BT.available()) {
-    char c = BT.read();
-
-    Serial.print("BT received: ");
-    Serial.println(c);
+  // Read from USB (Serial) — used when connected via cable
+  while (Serial.available()) {
+    char c = Serial.read();
 
     if (c == 'S') {
       remoteStopped = true;
       moveStop();
       beep(1);
-      Serial.println("Safety STOP active");
+      Serial.println("USB STOP received");
     } else if (c == 'G') {
       remoteStopped = false;
-      Serial.println("Car allowed to drive");
+      Serial.println("USB GO received");
+    }
+  }
+
+  // Read from HC-05 Bluetooth (SoftwareSerial)
+  while (BT.available()) {
+    char c = BT.read();
+
+    if (c == 'S') {
+      remoteStopped = true;
+      moveStop();
+      beep(1);
+      Serial.println("BT STOP received");
+    } else if (c == 'G') {
+      remoteStopped = false;
+      Serial.println("BT GO received");
     }
   }
 }
