@@ -108,6 +108,14 @@ HC-05 RXD  -> Arduino pin 3 through voltage divider
 
 Arduino code should read Bluetooth on `SoftwareSerial BT(2, 3)` and stop when it receives `S`.
 
+The ready-to-upload Arduino Uno sketch is here:
+
+```text
+arduino/driver_protection_car/driver_protection_car.ino
+```
+
+Open that file in Arduino IDE and upload it to the Arduino Uno.
+
 ## Troubleshooting
 
 If Bluetooth connects but the camera window does not appear, check these first:
