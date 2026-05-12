@@ -33,6 +33,8 @@ from config import (
     BLUETOOTH_ENABLED,
     BLUETOOTH_PORT,
     BLUETOOTH_BAUDRATE,
+    BLUETOOTH_TIMEOUT_SECONDS,
+    BLUETOOTH_WRITE_TIMEOUT_SECONDS,
     BLUETOOTH_STOP_COMMAND,
     BLUETOOTH_GO_COMMAND,
     DISPLAY_ENABLED,
@@ -232,9 +234,12 @@ def main():
         enabled=BLUETOOTH_ENABLED,
         port=BLUETOOTH_PORT,
         baudrate=BLUETOOTH_BAUDRATE,
+        timeout=BLUETOOTH_TIMEOUT_SECONDS,
+        write_timeout=BLUETOOTH_WRITE_TIMEOUT_SECONDS,
         stop_command=BLUETOOTH_STOP_COMMAND,
         go_command=BLUETOOTH_GO_COMMAND,
     )
+    show_startup_frame(driver_source, "System ready")
 
     print("Controls:")
     print("  c = calibrate forward")
@@ -248,6 +253,9 @@ def main():
             break
 
         driver_frame = cv2.flip(driver_frame, 1)
+
+        if DISPLAY_ENABLED:
+            cv2.waitKey(1)
 
         if analyzer is not None:
             analysis = analyzer.analyze(driver_frame)

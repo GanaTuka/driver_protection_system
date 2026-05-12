@@ -69,6 +69,8 @@ Bluetooth is configured in `config.py`.
 BLUETOOTH_ENABLED = True
 BLUETOOTH_PORT = "COM7"
 BLUETOOTH_BAUDRATE = 9600
+BLUETOOTH_TIMEOUT_SECONDS = 1.0
+BLUETOOTH_WRITE_TIMEOUT_SECONDS = 0.5
 ```
 
 `COM7` is the default Windows Bluetooth serial port. If your HC-05 appears on another port, change `BLUETOOTH_PORT` in `config.py`.
@@ -127,4 +129,5 @@ If Bluetooth connects but the camera window does not appear, check these first:
 - If the window is off-screen, change `WINDOW_X` and `WINDOW_Y` in `config.py`.
 - If the camera opens but freezes while loading, set `FACE_ANALYSIS_ENABLED = False` to test camera-only mode.
 - If Bluetooth causes startup problems, set `BLUETOOTH_ENABLED = False` to test camera and face detection only.
+- If the window freezes at `Connecting Bluetooth...`, make sure Arduino Serial Monitor is closed and try the other HC-05 outgoing COM port.
 - If VS Code asks for camera permission, allow it.
