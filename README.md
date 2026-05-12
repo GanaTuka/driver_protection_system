@@ -99,6 +99,16 @@ The Python app sends:
 - `S`: stop Arduino car
 - `G`: allow Arduino car to move again
 
+To test only the HC-05/Arduino connection:
+
+```powershell
+python bluetooth_test.py --list
+python bluetooth_test.py --port COM7 --send G
+python bluetooth_test.py --port COM7 --send S
+```
+
+If `COM7` times out, try the other HC-05 COM port shown by `--list`. Windows usually creates one incoming port and one outgoing port; use the outgoing port.
+
 For this project, run with Windows Python if you are using `COM7`.
 
 ## Arduino HC-05 Wiring
@@ -132,4 +142,5 @@ If Bluetooth connects but the camera window does not appear, check these first:
 - If the camera opens but freezes while loading, set `FACE_ANALYSIS_ENABLED = False` to test camera-only mode.
 - If Bluetooth causes startup problems, set `BLUETOOTH_ENABLED = False` to test camera and face detection only.
 - If the window freezes at `Connecting Bluetooth...`, make sure Arduino Serial Monitor is closed and try the other HC-05 outgoing COM port.
+- If `bluetooth_test.py --port COM7 --send G` times out, the problem is the Bluetooth serial port/link, not `main.py`.
 - If VS Code asks for camera permission, allow it.

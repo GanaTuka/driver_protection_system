@@ -47,7 +47,12 @@ class BluetoothController:
                 self.baudrate,
                 timeout=self.timeout,
                 write_timeout=self.write_timeout,
+                rtscts=False,
+                dsrdtr=False,
+                xonxoff=False,
             )
+            self.serial.reset_input_buffer()
+            self.serial.reset_output_buffer()
             print(f"Bluetooth connected on {self.port} at {self.baudrate} baud.")
             if self.startup_delay > 0:
                 print(f"Waiting {self.startup_delay:.1f}s for Bluetooth serial link to settle...")
