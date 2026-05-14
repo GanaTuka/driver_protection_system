@@ -175,7 +175,7 @@ void delayWithBluetoothCheck(unsigned long ms) {
 // =================================================
 
 void beepUntilGo() {
-  while (remoteStopped) {
+  while (remoteStopped && firstStopReceived) {
     readBluetoothCommand();
 
     for (int i = 0; i < 3 && remoteStopped; i++) {
