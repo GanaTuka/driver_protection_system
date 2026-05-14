@@ -71,6 +71,12 @@ TCP_STOP_COMMAND = "S"
 TCP_GO_COMMAND = "G"
 
 # =========================
+# Face capture
+# =========================
+FACE_CAPTURE_ENABLED = True
+FACE_CAPTURE_DIR = "captures"
+
+# =========================
 # UI / behavior
 # =========================
 DISPLAY_ENABLED = True

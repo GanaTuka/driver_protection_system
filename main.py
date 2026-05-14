@@ -1,7 +1,9 @@
 # main.py
 
+import os
 import platform
 import time
+from datetime import datetime
 
 import cv2
 
@@ -37,6 +39,8 @@ from config import (
     TCP_RECONNECT_SECONDS,
     TCP_STOP_COMMAND,
     TCP_GO_COMMAND,
+    FACE_CAPTURE_ENABLED,
+    FACE_CAPTURE_DIR,
     DISPLAY_ENABLED,
     STARTUP_CAMERA_PREVIEW_SECONDS,
     FACE_ANALYSIS_ENABLED,
@@ -73,11 +77,12 @@ def draw_analysis_overlay(frame, analysis, timers):
         cv2.putText(output, f"Yaw: {analysis['yaw']:.1f}  Pitch: {analysis['pitch']:.1f}", (20, 210),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
-        if "left_eye_points" in analysis:
-            for p in analysis["left_eye_points"]:
-                cv2.circle(output, p, 2, (0, 255, 0), -1)
-            for p in analysis["right_eye_points"]:
-                cv2.circle(output, p, 2, (0, 255, 0), -1)
+        if "landmarks" in analysis and analysis["landmarks"] is not None:
+            h, w = output.shape[:2]
+            for lm in analysis["landmarks"]:
+                x = int(lm.x * w)
+                y = int(lm.y * h)
+                cv2.circle(output, (x, y), 1, (0, 255, 0), -1)
 
     else:
         cv2.putText(output, "No face detected", (20, 150),
@@ -194,9 +199,27 @@ def run_startup_camera_preview(driver_source):
         cv2.setWindowProperty(WEBCAM_WINDOW_NAME, cv2.WND_PROP_TOPMOST, 0)
 
 
+def capture_face(frame, reason):
+    if not FACE_CAPTURE_ENABLED:
+        return
+
+    os.makedirs(FACE_CAPTURE_DIR, exist_ok=True)
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:22]
+    safe_reason = reason.replace(" ", "_") if reason else "unknown"
+    filename = f"{ts}_{safe_reason}.jpg"
+    filepath = os.path.join(FACE_CAPTURE_DIR, filename)
+    cv2.imwrite(filepath, frame)
+    print(f"Face captured: {filepath}")
+
+
 def main():
     driver_source = open_driver_source()
     open_display_window()
+
+    if FACE_CAPTURE_ENABLED:
+        os.makedirs(FACE_CAPTURE_DIR, exist_ok=True)
+        print(f"Face captures will be saved to {FACE_CAPTURE_DIR}/")
 
     show_startup_frame(driver_source, "Camera ready")
     run_startup_camera_preview(driver_source)
@@ -246,6 +269,8 @@ def main():
     print("  r = reset")
     print("  q = quit")
 
+    was_stopped = False
+
     while True:
         ret, driver_frame = driver_source.read()
         if not ret:
@@ -270,7 +295,12 @@ def main():
                 "pitch": 0.0,
             }
 
-        if logic.is_stopped():
+        stopped = logic.is_stopped()
+        if stopped and not was_stopped:
+            capture_face(driver_frame, logic.stop_reason)
+        was_stopped = stopped
+
+        if stopped:
             bluetooth.send_stop()
         else:
             bluetooth.send_go()
