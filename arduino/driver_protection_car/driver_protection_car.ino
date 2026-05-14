@@ -30,6 +30,7 @@ bool goesForward = false;
 
 // Start stopped for safety. Python must send 'G' before the car drives.
 bool remoteStopped = true;
+bool firstStopReceived = false;
 
 // =================================================
 
@@ -61,7 +62,9 @@ void loop() {
 
   if (remoteStopped) {
     moveStop();
-    beepUntilGo();
+    if (firstStopReceived) {
+      beepUntilGo();
+    }
     return;
   }
 
@@ -77,6 +80,7 @@ void readBluetoothCommand() {
 
     if (c == 'S') {
       remoteStopped = true;
+      firstStopReceived = true;
       moveStop();
       Serial.println("USB STOP received");
     } else if (c == 'G') {
@@ -91,6 +95,7 @@ void readBluetoothCommand() {
 
     if (c == 'S') {
       remoteStopped = true;
+      firstStopReceived = true;
       moveStop();
       Serial.println("BT STOP received");
     } else if (c == 'G') {
