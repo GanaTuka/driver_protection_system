@@ -78,7 +78,7 @@ void readBluetoothCommand() {
     if (c == 'S') {
       remoteStopped = true;
       moveStop();
-      beep(1);
+      beepContinuous(5000);
       Serial.println("USB STOP received");
     } else if (c == 'G') {
       remoteStopped = false;
@@ -93,7 +93,7 @@ void readBluetoothCommand() {
     if (c == 'S') {
       remoteStopped = true;
       moveStop();
-      beep(1);
+      beepContinuous(5000);
       Serial.println("BT STOP received");
     } else if (c == 'G') {
       remoteStopped = false;
@@ -109,7 +109,7 @@ void runObstacleAvoidance() {
 
   if (distance <= 20) {
     moveStop();
-    beep(1);
+    beepContinuous(250);
 
     delayWithBluetoothCheck(300);
     if (remoteStopped) return;
@@ -161,13 +161,23 @@ void delayWithBluetoothCheck(unsigned long ms) {
 
 // =================================================
 
-void beep(int times) {
-  for (int i = 0; i < times; i++) {
-    digitalWrite(buzzerPin, HIGH);
-    delay(150);
-    digitalWrite(buzzerPin, LOW);
+void beepContinuous(unsigned long duration) {
+  unsigned long start = millis();
+  bool state = false;
+
+  while (millis() - start < duration) {
+    readBluetoothCommand();
+    if (!remoteStopped) {
+      moveStop();
+      return;
+    }
+
+    state = !state;
+    digitalWrite(buzzerPin, state ? HIGH : LOW);
     delay(100);
   }
+
+  digitalWrite(buzzerPin, LOW);
 }
 
 // =================================================
