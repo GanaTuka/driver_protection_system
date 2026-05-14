@@ -51,8 +51,7 @@ void setup() {
   Serial.println("Driver protection car ready.");
   Serial.println("Bluetooth commands: S=stop, G=go");
 
-  beepContinuous(500);
-  delay(1000);
+  waitForGo();
 }
 
 // =================================================
@@ -160,6 +159,28 @@ void delayWithBluetoothCheck(unsigned long ms) {
 }
 
 // =================================================
+
+void waitForGo() {
+  Serial.println("Waiting for GO command (G)...");
+
+  while (remoteStopped) {
+    readBluetoothCommand();
+
+    for (int i = 0; i < 3 && remoteStopped; i++) {
+      digitalWrite(buzzerPin, HIGH);
+      delay(150);
+      digitalWrite(buzzerPin, LOW);
+      delay(120);
+    }
+
+    if (remoteStopped) {
+      delay(400);
+    }
+  }
+
+  digitalWrite(buzzerPin, LOW);
+  Serial.println("GO received, starting.");
+}
 
 void beepContinuous(unsigned long duration) {
   unsigned long start = millis();
