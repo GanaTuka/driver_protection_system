@@ -298,7 +298,7 @@ def main():
             logic.reset()
 
         elif key == ord("q"):
-            bluetooth.send_stop()
+            bluetooth.send_stop_silent()
             break
 
     driver_source.release()

@@ -83,6 +83,11 @@ void readBluetoothCommand() {
       firstStopReceived = true;
       moveStop();
       Serial.println("USB STOP received");
+    } else if (c == 'X') {
+      remoteStopped = true;
+      moveStop();
+      firstStopReceived = false;
+      Serial.println("USB SILENT STOP received");
     } else if (c == 'G') {
       remoteStopped = false;
       Serial.println("USB GO received");
@@ -98,6 +103,11 @@ void readBluetoothCommand() {
       firstStopReceived = true;
       moveStop();
       Serial.println("BT STOP received");
+    } else if (c == 'X') {
+      remoteStopped = true;
+      moveStop();
+      firstStopReceived = false;
+      Serial.println("BT SILENT STOP received");
     } else if (c == 'G') {
       remoteStopped = false;
       Serial.println("BT GO received");

@@ -45,6 +45,9 @@ class BluetoothController:
     def send_stop(self):
         self._send_once(self.stop_command)
 
+    def send_stop_silent(self):
+        self._send_once("X")
+
     def send_go(self):
         self._send_once(self.go_command)
 
