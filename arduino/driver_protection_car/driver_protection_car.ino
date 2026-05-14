@@ -51,7 +51,7 @@ void setup() {
   Serial.println("Driver protection car ready.");
   Serial.println("Bluetooth commands: S=stop, G=go");
 
-  waitForGo();
+  delay(500);
 }
 
 // =================================================
