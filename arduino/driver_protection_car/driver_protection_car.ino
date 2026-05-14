@@ -61,6 +61,7 @@ void loop() {
 
   if (remoteStopped) {
     moveStop();
+    beepUntilGo();
     return;
   }
 
@@ -77,7 +78,6 @@ void readBluetoothCommand() {
     if (c == 'S') {
       remoteStopped = true;
       moveStop();
-      beepContinuous(5000);
       Serial.println("USB STOP received");
     } else if (c == 'G') {
       remoteStopped = false;
@@ -92,7 +92,6 @@ void readBluetoothCommand() {
     if (c == 'S') {
       remoteStopped = true;
       moveStop();
-      beepContinuous(5000);
       Serial.println("BT STOP received");
     } else if (c == 'G') {
       remoteStopped = false;
@@ -160,9 +159,7 @@ void delayWithBluetoothCheck(unsigned long ms) {
 
 // =================================================
 
-void waitForGo() {
-  Serial.println("Waiting for GO command (G)...");
-
+void beepUntilGo() {
   while (remoteStopped) {
     readBluetoothCommand();
 
@@ -179,7 +176,6 @@ void waitForGo() {
   }
 
   digitalWrite(buzzerPin, LOW);
-  Serial.println("GO received, starting.");
 }
 
 void beepContinuous(unsigned long duration) {
