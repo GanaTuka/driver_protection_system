@@ -30,15 +30,13 @@ from config import (
     FORWARD_YAW_DEADZONE,
     FORWARD_PITCH_DEADZONE,
     SMOOTHING_ALPHA,
-    BLUETOOTH_ENABLED,
-    BLUETOOTH_PORT,
-    BLUETOOTH_BAUDRATE,
-    BLUETOOTH_TIMEOUT_SECONDS,
-    BLUETOOTH_WRITE_TIMEOUT_SECONDS,
-    BLUETOOTH_STARTUP_DELAY_SECONDS,
-    BLUETOOTH_RETRY_SECONDS,
-    BLUETOOTH_STOP_COMMAND,
-    BLUETOOTH_GO_COMMAND,
+    TCP_ENABLED,
+    TCP_HOST,
+    TCP_PORT,
+    TCP_TIMEOUT_SECONDS,
+    TCP_RECONNECT_SECONDS,
+    TCP_STOP_COMMAND,
+    TCP_GO_COMMAND,
     DISPLAY_ENABLED,
     STARTUP_CAMERA_PREVIEW_SECONDS,
     FACE_ANALYSIS_ENABLED,
@@ -230,18 +228,16 @@ def main():
         )
         print("Face model ready.")
 
-    print("Connecting Bluetooth...")
-    show_startup_frame(driver_source, "Connecting Bluetooth...")
+    print("Connecting to phone TCP server...")
+    show_startup_frame(driver_source, "Connecting to phone TCP server...")
     bluetooth = BluetoothController(
-        enabled=BLUETOOTH_ENABLED,
-        port=BLUETOOTH_PORT,
-        baudrate=BLUETOOTH_BAUDRATE,
-        timeout=BLUETOOTH_TIMEOUT_SECONDS,
-        write_timeout=BLUETOOTH_WRITE_TIMEOUT_SECONDS,
-        startup_delay=BLUETOOTH_STARTUP_DELAY_SECONDS,
-        retry_seconds=BLUETOOTH_RETRY_SECONDS,
-        stop_command=BLUETOOTH_STOP_COMMAND,
-        go_command=BLUETOOTH_GO_COMMAND,
+        enabled=TCP_ENABLED,
+        host=TCP_HOST,
+        port=TCP_PORT,
+        timeout=TCP_TIMEOUT_SECONDS,
+        reconnect_seconds=TCP_RECONNECT_SECONDS,
+        stop_command=TCP_STOP_COMMAND,
+        go_command=TCP_GO_COMMAND,
     )
     show_startup_frame(driver_source, "System ready")
 

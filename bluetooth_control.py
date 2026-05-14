@@ -1,3 +1,4 @@
+import socket
 import time
 
 
@@ -5,60 +6,40 @@ class BluetoothController:
     def __init__(
         self,
         enabled,
+        host,
         port,
-        baudrate,
-        timeout=1.0,
-        write_timeout=2.0,
-        startup_delay=2.0,
-        retry_seconds=1.0,
+        timeout=5.0,
+        reconnect_seconds=2.0,
         stop_command="S",
         go_command="G",
     ):
         self.enabled = enabled
+        self.host = host
         self.port = port
-        self.baudrate = baudrate
         self.timeout = timeout
-        self.write_timeout = write_timeout
-        self.startup_delay = startup_delay
-        self.retry_seconds = retry_seconds
+        self.reconnect_seconds = reconnect_seconds
         self.stop_command = stop_command
         self.go_command = go_command
-        self.serial = None
+        self.sock = None
         self.last_command = None
         self.last_attempted_command = None
         self.last_attempted_at = 0.0
-        self.serial_module = None
 
         if not self.enabled:
             return
 
-        try:
-            import serial
-        except ImportError:
-            print("Bluetooth disabled: install pyserial with `pip install pyserial`.")
-            self.enabled = False
-            return
+        self._connect()
 
-        self.serial_module = serial
-
+    def _connect(self):
         try:
-            self.serial = serial.Serial(
-                self.port,
-                self.baudrate,
+            self.sock = socket.create_connection(
+                (self.host, self.port),
                 timeout=self.timeout,
-                write_timeout=self.write_timeout,
-                rtscts=False,
-                dsrdtr=False,
-                xonxoff=False,
             )
-            self.serial.reset_input_buffer()
-            self.serial.reset_output_buffer()
-            print(f"Bluetooth connected on {self.port} at {self.baudrate} baud.")
-            if self.startup_delay > 0:
-                print(f"Waiting {self.startup_delay:.1f}s for Bluetooth serial link to settle...")
-                time.sleep(self.startup_delay)
-        except serial.SerialException as exc:
-            print(f"Bluetooth disabled: could not open {self.port}: {exc}")
+            self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            print(f"TCP connected to {self.host}:{self.port}")
+        except (socket.timeout, OSError) as exc:
+            print(f"TCP disabled: could not connect to {self.host}:{self.port}: {exc}")
             self.enabled = False
 
     def send_stop(self):
@@ -68,26 +49,33 @@ class BluetoothController:
         self._send_once(self.go_command)
 
     def _send_once(self, command):
-        if not self.enabled or self.serial is None or self.last_command == command:
+        if not self.enabled or self.sock is None or self.last_command == command:
             return
 
         now = time.time()
-        if self.last_attempted_command == command and now - self.last_attempted_at < self.retry_seconds:
+        if self.last_attempted_command == command and now - self.last_attempted_at < self.reconnect_seconds:
             return
 
         self.last_attempted_command = command
         self.last_attempted_at = now
 
         try:
-            self.serial.write(command.encode("ascii"))
+            self.sock.sendall(command.encode("ascii"))
             self.last_command = command
-            print(f"Bluetooth sent: {command}")
-        except self.serial_module.SerialTimeoutException as exc:
-            print(f"Bluetooth send timed out for {command}; will retry: {exc}")
-        except (self.serial_module.SerialException, OSError) as exc:
-            print(f"Bluetooth disabled: serial connection lost while sending {command}: {exc}")
-            self.enabled = False
+            print(f"TCP sent: {command}")
+        except OSError as exc:
+            print(f"TCP connection lost while sending {command}: {exc}")
+            self._reconnect()
+
+    def _reconnect(self):
+        print(f"Reconnecting to {self.host}:{self.port} in {self.reconnect_seconds}s...")
+        time.sleep(self.reconnect_seconds)
+        self.sock = None
+        self._connect()
 
     def close(self):
-        if self.serial is not None and self.serial.is_open:
-            self.serial.close()
+        if self.sock is not None:
+            try:
+                self.sock.close()
+            except OSError:
+                pass
