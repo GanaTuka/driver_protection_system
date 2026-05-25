@@ -71,6 +71,13 @@ TCP_STOP_COMMAND = "S"
 TCP_GO_COMMAND = "G"
 
 # =========================
+# Driver profile (face-based driver authentication)
+# =========================
+DRIVER_PROFILE_ENABLED = True
+DRIVER_PROFILE_MATCH_THRESHOLD = 0.85
+DRIVER_PROFILE_PATH = "assets/driver_profile.npy"
+
+# =========================
 # Face capture
 # =========================
 FACE_CAPTURE_ENABLED = True

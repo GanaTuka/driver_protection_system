@@ -39,6 +39,9 @@ from config import (
     TCP_RECONNECT_SECONDS,
     TCP_STOP_COMMAND,
     TCP_GO_COMMAND,
+    DRIVER_PROFILE_ENABLED,
+    DRIVER_PROFILE_MATCH_THRESHOLD,
+    DRIVER_PROFILE_PATH,
     FACE_CAPTURE_ENABLED,
     FACE_CAPTURE_DIR,
     DISPLAY_ENABLED,
@@ -47,7 +50,8 @@ from config import (
 )
 from safety_logic import SafetyLogic
 from face_analysis import FaceAnalyzer
-from bluetooth_control import BluetoothController
+from tcp_controller import TCPController
+from face_profile import FaceProfile
 
 
 def draw_status(frame, state, reason=None):
@@ -251,9 +255,17 @@ def main():
         )
         print("Face model ready.")
 
+    face_profile = None
+    if FACE_ANALYSIS_ENABLED and DRIVER_PROFILE_ENABLED:
+        print("Loading driver profile...")
+        face_profile = FaceProfile(
+            match_threshold=DRIVER_PROFILE_MATCH_THRESHOLD,
+            profile_path=DRIVER_PROFILE_PATH,
+        )
+
     print("Connecting to phone TCP server...")
     show_startup_frame(driver_source, "Connecting to phone TCP server...")
-    bluetooth = BluetoothController(
+    bluetooth = TCPController(
         enabled=TCP_ENABLED,
         host=TCP_HOST,
         port=TCP_PORT,
@@ -284,7 +296,14 @@ def main():
 
         if analyzer is not None:
             analysis = analyzer.analyze(driver_frame)
-            logic.update(analysis)
+
+            if face_profile is not None and analysis["face_detected"] and face_profile.has_profile():
+                if face_profile.is_driver(analysis["landmarks"]):
+                    logic.update(analysis)
+                else:
+                    analysis["head_direction"] = "UNKNOWN DRIVER"
+            else:
+                logic.update(analysis)
         else:
             analysis = {
                 "face_detected": False,
@@ -300,7 +319,7 @@ def main():
             capture_face(driver_frame, logic.stop_reason)
         was_stopped = stopped
 
-        if stopped:
+        if logic.is_stopped():
             bluetooth.send_stop()
         else:
             bluetooth.send_go()
@@ -323,6 +342,8 @@ def main():
             if analyzer is not None and analysis["face_detected"]:
                 analyzer.calibrate_forward_from_raw()
                 print("Forward direction calibrated from raw pose.")
+                if face_profile is not None and analysis.get("landmarks") is not None:
+                    face_profile.save_profile(analysis["landmarks"])
 
         elif key == ord("r"):
             logic.reset()

@@ -257,12 +257,24 @@ int readPing() {
 // ================= MOVEMENT =================
 
 void moveStop() {
-  goesForward = false;
+  if (goesForward) {
+    goesForward = false;
 
-  digitalWrite(RightMotorForward, LOW);
-  digitalWrite(LeftMotorForward, LOW);
-  digitalWrite(RightMotorBackward, LOW);
-  digitalWrite(LeftMotorBackward, LOW);
+    digitalWrite(LeftMotorForward, LOW);
+    digitalWrite(RightMotorForward, LOW);
+
+    digitalWrite(LeftMotorBackward, HIGH);
+    digitalWrite(RightMotorBackward, HIGH);
+    delay(30);
+
+    digitalWrite(LeftMotorBackward, LOW);
+    digitalWrite(RightMotorBackward, LOW);
+  } else {
+    digitalWrite(RightMotorForward, LOW);
+    digitalWrite(LeftMotorForward, LOW);
+    digitalWrite(RightMotorBackward, LOW);
+    digitalWrite(LeftMotorBackward, LOW);
+  }
 }
 
 // =================================================
