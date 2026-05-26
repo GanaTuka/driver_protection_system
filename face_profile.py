@@ -15,18 +15,18 @@ class FaceProfile:
         for lm in landmarks:
             points.extend([lm.x, lm.y, lm.z])
 
-        encoding = np.array(points, dtype=np.float32)
+        all_landmarks = np.array(points, dtype=np.float32).reshape(-1, 3)
 
-        nose = encoding[1 * 3 : 1 * 3 + 3]
-        encoding -= nose
+        nose = all_landmarks[1].copy()
+        all_landmarks -= nose
 
-        left_eye = encoding[33 * 3 : 33 * 3 + 3]
-        right_eye = encoding[263 * 3 : 263 * 3 + 3]
+        left_eye = all_landmarks[33]
+        right_eye = all_landmarks[263]
         eye_dist = np.linalg.norm(left_eye - right_eye)
         if eye_dist > 0:
-            encoding /= eye_dist
+            all_landmarks /= eye_dist
 
-        return encoding
+        return all_landmarks.flatten()
 
     def save_profile(self, landmarks):
         self.encoding = self._extract_encoding(landmarks)
