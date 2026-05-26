@@ -115,6 +115,9 @@ class SafetyLogic:
                 self.trigger_stop("Looking down too long")
                 return
 
+        if self.state == "STOP" and not self.stop_latched:
+            self.reset()
+
     def get_timers(self):
         now = time.time()
 

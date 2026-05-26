@@ -301,7 +301,15 @@ def main():
                 if face_profile.is_driver(analysis["landmarks"]):
                     logic.update(analysis)
                 else:
-                    analysis["head_direction"] = "UNKNOWN DRIVER"
+                    fake = {
+                        "face_detected": False,
+                        "eyes_closed": False,
+                        "head_direction": "UNKNOWN",
+                        "avg_ear": 0.0,
+                        "yaw": 0.0,
+                        "pitch": 0.0,
+                    }
+                    logic.update(fake)
             else:
                 logic.update(analysis)
         else:

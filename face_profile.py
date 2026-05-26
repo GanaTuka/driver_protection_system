@@ -2,11 +2,31 @@ import numpy as np
 from pathlib import Path
 
 
+ANCHOR_INDICES = (1, 33, 263)
+
+
+def _align_landmarks(source, target_anchors):
+    src_anchors = source[list(ANCHOR_INDICES)]
+    src_centroid = src_anchors.mean(axis=0)
+    tgt_centroid = target_anchors.mean(axis=0)
+    src_centered = src_anchors - src_centroid
+    tgt_centered = target_anchors - tgt_centroid
+    H = src_centered.T @ tgt_centered
+    U, _, Vt = np.linalg.svd(H)
+    R = Vt.T @ U.T
+    if np.linalg.det(R) < 0:
+        Vt[-1, :] *= -1
+        R = Vt.T @ U.T
+    aligned = (source - src_centroid) @ R.T + tgt_centroid
+    return aligned
+
+
 class FaceProfile:
-    def __init__(self, match_threshold=0.85, profile_path="assets/driver_profile.npy"):
+    def __init__(self, match_threshold=0.75, profile_path="assets/driver_profile.npy"):
         self.match_threshold = match_threshold
         self.profile_path = Path(profile_path)
         self.encoding = None
+        self.profile_anchor_points = None
         self._load()
 
     def _extract_encoding(self, landmarks):
@@ -17,8 +37,11 @@ class FaceProfile:
 
         all_landmarks = np.array(points, dtype=np.float32).reshape(-1, 3)
 
-        nose = all_landmarks[1].copy()
-        all_landmarks -= nose
+        if self.profile_anchor_points is not None:
+            all_landmarks = _align_landmarks(all_landmarks, self.profile_anchor_points)
+        else:
+            nose = all_landmarks[1].copy()
+            all_landmarks -= nose
 
         left_eye = all_landmarks[33]
         right_eye = all_landmarks[263]
@@ -29,9 +52,15 @@ class FaceProfile:
         return all_landmarks.flatten()
 
     def save_profile(self, landmarks):
+        points = []
+        for lm in landmarks:
+            points.extend([lm.x, lm.y, lm.z])
+        all_landmarks = np.array(points, dtype=np.float32).reshape(-1, 3)
+        self.profile_anchor_points = all_landmarks[list(ANCHOR_INDICES)].copy()
         self.encoding = self._extract_encoding(landmarks)
         self.profile_path.parent.mkdir(parents=True, exist_ok=True)
         np.save(str(self.profile_path), self.encoding)
+        self.save_anchor()
         print(f"Driver profile saved to {self.profile_path}")
 
     def match(self, landmarks):
@@ -55,11 +84,24 @@ class FaceProfile:
 
     def clear(self):
         self.encoding = None
+        self.profile_anchor_points = None
         if self.profile_path.exists():
             self.profile_path.unlink()
+        anchor_path = self.profile_path.parent / "driver_profile_anchor.npy"
+        if anchor_path.exists():
+            anchor_path.unlink()
         print("Driver profile cleared")
 
     def _load(self):
         if self.profile_path.exists():
             self.encoding = np.load(str(self.profile_path))
             print(f"Driver profile loaded from {self.profile_path}")
+            anchor_path = self.profile_path.parent / "driver_profile_anchor.npy"
+            if anchor_path.exists():
+                self.profile_anchor_points = np.load(str(anchor_path))
+
+    def save_anchor(self):
+        if self.profile_anchor_points is not None:
+            anchor_path = self.profile_path.parent / "driver_profile_anchor.npy"
+            np.save(str(anchor_path), self.profile_anchor_points)
+            print(f"Anchor saved to {anchor_path}")

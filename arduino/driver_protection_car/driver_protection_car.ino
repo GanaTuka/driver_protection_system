@@ -223,7 +223,7 @@ void moveStop() {
     for (int speed = 255; speed >= 0; speed -= 15) {
       analogWrite(ENA, speed);
       analogWrite(ENB, speed);
-      delay(15);
+      delay(25);
     }
 
     // short reverse brake
