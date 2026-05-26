@@ -102,7 +102,7 @@ void runObstacleAvoidance() {
   distance = readPing();
 
   if (distance <= 20) {
-    moveStop();
+    moveStopUrgent();
     beepContinuous(250);
 
     delayWithBluetoothCheck(300);
@@ -214,6 +214,17 @@ int readPing() {
 }
 
 // ================= MOVEMENT =================
+
+void moveStopUrgent() {
+  goesForward = false;
+
+  digitalWrite(LeftMotorForward, LOW);
+  digitalWrite(RightMotorForward, LOW);
+  digitalWrite(LeftMotorBackward, LOW);
+  digitalWrite(RightMotorBackward, LOW);
+  analogWrite(ENA, 0);
+  analogWrite(ENB, 0);
+}
 
 void moveStop() {
   if (goesForward) {
