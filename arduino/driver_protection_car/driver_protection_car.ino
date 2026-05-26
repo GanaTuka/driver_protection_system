@@ -16,10 +16,10 @@ const int RightMotorBackward = 4;
 NewPing sonar(trig_pin, echo_pin, maximum_distance);
 Servo servo_motor;
 
-// ================= HC-05 =================
-// HC-05 TXD -> Arduino pin 2
-// HC-05 RXD -> Arduino pin 3 through a voltage divider
-SoftwareSerial BT(2, 3); // RX, TX
+// ================= HC-06 =================
+// HC-06 TXD -> Arduino pin 2
+// HC-06 RXD -> Arduino pin 3 through voltage divider
+SoftwareSerial BT(2, 3);
 
 // ================= BUZZER =================
 #define buzzerPin 8
@@ -27,8 +27,6 @@ SoftwareSerial BT(2, 3); // RX, TX
 // ================= VARIABLES =================
 int distance = 100;
 bool goesForward = false;
-
-// Start stopped for safety. Python must send 'G' before the car drives.
 bool remoteStopped = true;
 bool firstStopReceived = false;
 
@@ -48,10 +46,7 @@ void setup() {
   servo_motor.write(115);
 
   moveStop();
-
   Serial.println("Driver protection car ready.");
-  Serial.println("Bluetooth commands: S=stop, G=go");
-
   delay(500);
 }
 
@@ -62,9 +57,7 @@ void loop() {
 
   if (remoteStopped) {
     moveStop();
-    if (firstStopReceived) {
-      beepUntilGo();
-    }
+    if (firstStopReceived) beepUntilGo();
     return;
   }
 
@@ -73,45 +66,26 @@ void loop() {
 
 // =================================================
 
-void readBluetoothCommand() {
-  // Read from USB (Serial) — used when connected via cable
-  while (Serial.available()) {
-    char c = Serial.read();
-
-    if (c == 'S') {
-      remoteStopped = true;
-      firstStopReceived = true;
-      moveStop();
-      Serial.println("USB STOP received");
-    } else if (c == 'X') {
-      remoteStopped = true;
-      moveStop();
-      firstStopReceived = false;
-      Serial.println("USB SILENT STOP received");
-    } else if (c == 'G') {
-      remoteStopped = false;
-      Serial.println("USB GO received");
-    }
+void processCommand(char c) {
+  if (c == 'S') {
+    remoteStopped = true;
+    firstStopReceived = true;
+    moveStop();
+  } else if (c == 'X') {
+    remoteStopped = true;
+    firstStopReceived = false;
+    moveStop();
+  } else if (c == 'G') {
+    remoteStopped = false;
   }
+}
 
-  // Read from HC-05 Bluetooth (SoftwareSerial)
+void readBluetoothCommand() {
+  while (Serial.available()) {
+    processCommand(Serial.read());
+  }
   while (BT.available()) {
-    char c = BT.read();
-
-    if (c == 'S') {
-      remoteStopped = true;
-      firstStopReceived = true;
-      moveStop();
-      Serial.println("BT STOP received");
-    } else if (c == 'X') {
-      remoteStopped = true;
-      moveStop();
-      firstStopReceived = false;
-      Serial.println("BT SILENT STOP received");
-    } else if (c == 'G') {
-      remoteStopped = false;
-      Serial.println("BT GO received");
-    }
+    processCommand(BT.read());
   }
 }
 
@@ -162,17 +136,13 @@ void delayWithBluetoothCheck(unsigned long ms) {
 
   while (millis() - startTime < ms) {
     readBluetoothCommand();
-
     if (remoteStopped) {
       moveStop();
       return;
     }
-
     delay(10);
   }
 }
-
-// =================================================
 
 void beepUntilGo() {
   while (remoteStopped && firstStopReceived) {
@@ -185,9 +155,7 @@ void beepUntilGo() {
       delay(120);
     }
 
-    if (remoteStopped) {
-      delay(400);
-    }
+    if (remoteStopped) delay(400);
   }
 
   digitalWrite(buzzerPin, LOW);
@@ -217,41 +185,25 @@ void beepContinuous(unsigned long duration) {
 int lookRight() {
   servo_motor.write(50);
   delayWithBluetoothCheck(500);
-
-  int distance = readPing();
-
+  int dist = readPing();
   delayWithBluetoothCheck(100);
   servo_motor.write(115);
-
-  return distance;
+  return dist;
 }
-
-// =================================================
 
 int lookLeft() {
   servo_motor.write(170);
   delayWithBluetoothCheck(500);
-
-  int distance = readPing();
-
+  int dist = readPing();
   delayWithBluetoothCheck(100);
   servo_motor.write(115);
-
-  return distance;
+  return dist;
 }
-
-// =================================================
 
 int readPing() {
   delayWithBluetoothCheck(70);
-
   int cm = sonar.ping_cm();
-
-  if (cm == 0) {
-    cm = 250;
-  }
-
-  return cm;
+  return cm == 0 ? 250 : cm;
 }
 
 // ================= MOVEMENT =================
@@ -291,8 +243,6 @@ void moveForward() {
   }
 }
 
-// =================================================
-
 void moveBackward() {
   goesForward = false;
 
@@ -317,8 +267,6 @@ void turnRight() {
   delayWithBluetoothCheck(250);
   moveStop();
 }
-
-// =================================================
 
 void turnLeft() {
   goesForward = false;
