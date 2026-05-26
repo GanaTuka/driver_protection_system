@@ -2,7 +2,7 @@ import numpy as np
 from pathlib import Path
 
 
-ANCHOR_INDICES = (1, 33, 263)
+ANCHOR_INDICES = (1, 2, 33, 61, 152, 168, 263, 291)
 
 
 def _align_landmarks(source, target_anchors):
@@ -98,7 +98,11 @@ class FaceProfile:
             print(f"Driver profile loaded from {self.profile_path}")
             anchor_path = self.profile_path.parent / "driver_profile_anchor.npy"
             if anchor_path.exists():
-                self.profile_anchor_points = np.load(str(anchor_path))
+                loaded = np.load(str(anchor_path))
+                if loaded.shape == (len(ANCHOR_INDICES), 3):
+                    self.profile_anchor_points = loaded
+                else:
+                    print(f"Old anchor format ignored; press C to re-save profile")
 
     def save_anchor(self):
         if self.profile_anchor_points is not None:

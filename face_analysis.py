@@ -21,6 +21,36 @@ POSE_LANDMARKS = {
     "right_mouth": 291,
 }
 
+MIN_FACE_AREA = 80
+
+
+def _face_bounding(landmarks, width, height):
+    xs = [int(lm.x * width) for lm in landmarks]
+    ys = [int(lm.y * height) for lm in landmarks]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _face_size_ok(landmarks, width, height):
+    x1, y1, x2, y2 = _face_bounding(landmarks, width, height)
+    return (x2 - x1) >= MIN_FACE_AREA and (y2 - y1) >= MIN_FACE_AREA
+
+
+def _face_center_dist(landmarks, width, height):
+    x1, y1, x2, y2 = _face_bounding(landmarks, width, height)
+    cx = (x1 + x2) / 2.0
+    cy = (y1 + y2) / 2.0
+    fc_x = width / 2.0
+    fc_y = height / 2.0
+    return math.hypot(cx - fc_x, cy - fc_y)
+
+
+def _pick_best_face(face_landmarks_list, width, height):
+    candidates = [fl for fl in face_landmarks_list if _face_size_ok(fl, width, height)]
+    if not candidates:
+        return None
+    candidates.sort(key=lambda fl: _face_center_dist(fl, width, height))
+    return candidates[0]
+
 
 def euclidean(p1, p2):
     return math.dist(p1, p2)
@@ -75,7 +105,7 @@ class FaceAnalyzer:
             base_options=base_options,
             output_face_blendshapes=False,
             output_facial_transformation_matrixes=False,
-            num_faces=1,
+            num_faces=5,
         )
         self.landmarker = vision.FaceLandmarker.create_from_options(options)
 
@@ -198,7 +228,23 @@ class FaceAnalyzer:
                 "landmarks": None,
             }
 
-        landmarks = result.face_landmarks[0]
+        best = _pick_best_face(result.face_landmarks, width, height)
+        if best is None:
+            return {
+                "face_detected": False,
+                "eyes_closed": False,
+                "head_direction": "UNKNOWN",
+                "left_ear": 0.0,
+                "right_ear": 0.0,
+                "avg_ear": 0.0,
+                "yaw": 0.0,
+                "pitch": 0.0,
+                "raw_yaw": 0.0,
+                "raw_pitch": 0.0,
+                "landmarks": None,
+            }
+
+        landmarks = best
 
         left_eye = self._extract_eye_points(landmarks, LEFT_EYE_IDX, width, height)
         right_eye = self._extract_eye_points(landmarks, RIGHT_EYE_IDX, width, height)

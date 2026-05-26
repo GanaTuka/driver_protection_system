@@ -282,6 +282,7 @@ def main():
     print("  q = quit")
 
     was_stopped = False
+    match_history = []
 
     while True:
         ret, driver_frame = driver_source.read()
@@ -298,7 +299,12 @@ def main():
             analysis = analyzer.analyze(driver_frame)
 
             if face_profile is not None and analysis["face_detected"] and face_profile.has_profile():
-                if face_profile.is_driver(analysis["landmarks"]):
+                is_match = face_profile.is_driver(analysis["landmarks"])
+                match_history.append(is_match)
+                if len(match_history) > 3:
+                    match_history.pop(0)
+                majority_match = sum(match_history) > len(match_history) // 2
+                if majority_match:
                     logic.update(analysis)
                 else:
                     fake = {
