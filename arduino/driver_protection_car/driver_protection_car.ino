@@ -8,6 +8,9 @@ const int LeftMotorBackward = 6;
 const int RightMotorForward = 5;
 const int RightMotorBackward = 4;
 
+#define ENA 9
+#define ENB 11
+
 // ================= ULTRASONIC =================
 #define trig_pin A1
 #define echo_pin A2
@@ -40,6 +43,10 @@ void setup() {
   pinMode(LeftMotorBackward, OUTPUT);
   pinMode(RightMotorForward, OUTPUT);
   pinMode(RightMotorBackward, OUTPUT);
+  pinMode(ENA, OUTPUT);
+  pinMode(ENB, OUTPUT);
+  digitalWrite(ENA, HIGH);
+  digitalWrite(ENB, HIGH);
   pinMode(buzzerPin, OUTPUT);
 
   servo_motor.attach(10);
@@ -217,7 +224,7 @@ void moveStop() {
 
     digitalWrite(LeftMotorBackward, HIGH);
     digitalWrite(RightMotorBackward, HIGH);
-    delay(30);
+    delay(100);
 
     digitalWrite(LeftMotorBackward, LOW);
     digitalWrite(RightMotorBackward, LOW);
