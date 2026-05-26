@@ -219,16 +219,24 @@ void moveStop() {
   if (goesForward) {
     goesForward = false;
 
+    // ramp down PWM for smooth deceleration
+    for (int speed = 255; speed >= 0; speed -= 15) {
+      analogWrite(ENA, speed);
+      analogWrite(ENB, speed);
+      delay(15);
+    }
+
+    // short reverse brake
     digitalWrite(LeftMotorForward, LOW);
     digitalWrite(RightMotorForward, LOW);
-
     digitalWrite(LeftMotorBackward, HIGH);
     digitalWrite(RightMotorBackward, HIGH);
-    delay(100);
-
+    delay(50);
     digitalWrite(LeftMotorBackward, LOW);
     digitalWrite(RightMotorBackward, LOW);
   } else {
+    analogWrite(ENA, 0);
+    analogWrite(ENB, 0);
     digitalWrite(RightMotorForward, LOW);
     digitalWrite(LeftMotorForward, LOW);
     digitalWrite(RightMotorBackward, LOW);
@@ -244,9 +252,11 @@ void moveForward() {
 
     digitalWrite(LeftMotorForward, HIGH);
     digitalWrite(RightMotorForward, HIGH);
-
     digitalWrite(LeftMotorBackward, LOW);
     digitalWrite(RightMotorBackward, LOW);
+
+    analogWrite(ENA, 255);
+    analogWrite(ENB, 255);
   }
 }
 
@@ -255,9 +265,11 @@ void moveBackward() {
 
   digitalWrite(LeftMotorBackward, HIGH);
   digitalWrite(RightMotorBackward, HIGH);
-
   digitalWrite(LeftMotorForward, LOW);
   digitalWrite(RightMotorForward, LOW);
+
+  analogWrite(ENA, 255);
+  analogWrite(ENB, 255);
 }
 
 // =================================================
@@ -267,9 +279,11 @@ void turnRight() {
 
   digitalWrite(LeftMotorForward, HIGH);
   digitalWrite(RightMotorBackward, HIGH);
-
   digitalWrite(LeftMotorBackward, LOW);
   digitalWrite(RightMotorForward, LOW);
+
+  analogWrite(ENA, 255);
+  analogWrite(ENB, 255);
 
   delayWithBluetoothCheck(250);
   moveStop();
@@ -280,9 +294,11 @@ void turnLeft() {
 
   digitalWrite(LeftMotorBackward, HIGH);
   digitalWrite(RightMotorForward, HIGH);
-
   digitalWrite(LeftMotorForward, LOW);
   digitalWrite(RightMotorBackward, LOW);
+
+  analogWrite(ENA, 255);
+  analogWrite(ENB, 255);
 
   delayWithBluetoothCheck(250);
   moveStop();
